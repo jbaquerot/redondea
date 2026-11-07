@@ -78,7 +78,7 @@ function serveProject() {
     const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8' };
     const server = http.createServer((request, response) => {
         const pathname = new URL(request.url, 'http://127.0.0.1').pathname;
-        const filename = pathname === '/' ? 'index.html' : path.basename(pathname);
+        const filename = pathname === '/' || pathname === '/redondea/' ? 'index.html' : path.basename(pathname);
         if (!['index.html', 'app.js', 'styles.css'].includes(filename)) {
             response.writeHead(404).end('Not found');
             return;
@@ -121,7 +121,7 @@ describe('Pruebas de navegador en Chrome headless', { concurrency: false }, () =
         if (!chromePath) throw new Error('No se encontró Chrome/Chromium. Define CHROME_BIN para indicar la ruta.');
         server = serveProject();
         await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
-        baseUrl = `http://127.0.0.1:${server.address().port}/`;
+        baseUrl = `http://127.0.0.1:${server.address().port}/redondea/`;
         const debugPort = await getFreePort();
         profileDir = fs.mkdtempSync(path.join(os.tmpdir(), 'redondea-chrome-'));
         chrome = spawn(chromePath, [
@@ -143,6 +143,7 @@ describe('Pruebas de navegador en Chrome headless', { concurrency: false }, () =
     beforeEach(async () => {
         await client.evaluate('localStorage.clear(); location.reload(); true');
         await waitUntil(() => client.evaluate('document.readyState === "complete" && !!document.getElementById("btn-check")'), 'recarga limpia del juego');
+        await client.evaluate(`(() => { document.querySelector('input[name="game-mode"][value="integer"]').checked = true; document.getElementById('btn-start').click(); })()`);
     });
 
     afterEach(async () => {
@@ -165,7 +166,7 @@ describe('Pruebas de navegador en Chrome headless', { concurrency: false }, () =
         }
     });
 
-    test('renderiza título, estilos locales y tablero de siete posiciones', async () => {
+    test('renderiza título, recursos locales y tablero ampliado bajo /redondea/', async () => {
         const rendered = await client.evaluate(`(() => {
             const game = document.querySelector('.game-container');
             return {
@@ -175,7 +176,8 @@ describe('Pruebas de navegador en Chrome headless', { concurrency: false }, () =
                 stylesheetLoaded: [...document.styleSheets].some(sheet => sheet.href?.endsWith('/styles.css')),
                 scriptLoaded: [...document.scripts].some(script => script.src.endsWith('/app.js')),
                 placeColumns: document.querySelectorAll('thead th').length,
-                digitInputs: document.querySelectorAll('input[type="text"]').length
+                digitInputs: document.querySelectorAll('.digit-input-label').length,
+                projectPath: location.pathname
             };
         })()`);
         assert.equal(rendered.title, 'Redondea los números: Edición Jurásica');
@@ -183,8 +185,9 @@ describe('Pruebas de navegador en Chrome headless', { concurrency: false }, () =
         assert.equal(rendered.panelVisible, true);
         assert.equal(rendered.stylesheetLoaded, true);
         assert.equal(rendered.scriptLoaded, true);
-        assert.equal(rendered.placeColumns, 8);
-        assert.equal(rendered.digitInputs, 14);
+        assert.equal(rendered.placeColumns, 11);
+        assert.equal(rendered.digitInputs, 20);
+        assert.equal(rendered.projectPath, '/redondea/');
     });
 
     test('adapta el tablero a móvil y permite desplazamiento horizontal', async () => {
@@ -214,6 +217,12 @@ describe('Pruebas de navegador en Chrome headless', { concurrency: false }, () =
         const activeId = await client.evaluate('document.activeElement.id');
         assert.equal(activeId, 'src-cm');
         assert.equal(await client.evaluate('document.getElementById("src-m").value'), '9');
+        const nextRow = await client.evaluate(`(() => {
+            const lastInteger = document.getElementById('src-u');
+            lastInteger.value = '4'; lastInteger.dispatchEvent(new Event('input', { bubbles: true }));
+            return document.activeElement.id;
+        })()`);
+        assert.equal(nextRow, 'res-m');
     });
 
     test('un clic en Comprobar valida la respuesta y actualiza la puntuación', async () => {
@@ -273,5 +282,56 @@ describe('Pruebas de navegador en Chrome headless', { concurrency: false }, () =
         assert.equal(result.millionDigit, '1');
         assert.equal(result.hundredThousandsDigit, '0');
         assert.equal(result.nextVisible, true);
+    });
+
+    test('bloquea el tablero hasta elegir modo e inicia decimales con nombre', async () => {
+        await client.evaluate('location.reload()');
+        await waitUntil(() => client.evaluate('document.readyState === "complete"'), 'recarga para comprobar el inicio');
+        const initial = await client.evaluate(`({ hidden: document.getElementById('game-board').hidden, hasQuestion: !!document.getElementById('question-number-display').textContent })`);
+        assert.equal(initial.hidden, true);
+        await client.evaluate(`(() => {
+            document.getElementById('player-name').value = '<Leo>';
+            document.querySelector('input[name="game-mode"][value="decimal"]').checked = true;
+            document.getElementById('btn-start').click();
+        })()`);
+        const started = await client.evaluate(`({
+            hidden: document.getElementById('game-board').hidden,
+            decimalMode: document.body.classList.contains('decimal-mode'),
+            greeting: document.getElementById('feedback-area').innerHTML
+        })`);
+        assert.equal(started.hidden, false);
+        assert.equal(started.decimalMode, true);
+        assert.match(started.greeting, /&lt;Leo&gt;/);
+        const decimalFocus = await client.evaluate(`(() => {
+            const units = document.getElementById('src-u');
+            units.value = '2'; units.dispatchEvent(new Event('input', { bubbles: true }));
+            return document.activeElement.id;
+        })()`);
+        assert.equal(decimalFocus, 'src-tenths');
+        await client.evaluate(`(() => {
+            document.getElementById('btn-custom').click();
+            const input = document.getElementById('custom-input-number');
+            input.value = '9 999,999'; input.dispatchEvent(new Event('input', { bubbles: true }));
+            document.getElementById('custom-target-select').value = '1000000';
+            document.getElementById('btn-custom-start').click();
+        })()`);
+        const mission = await client.evaluate(`({ number: document.getElementById('question-number-display').textContent, target: document.getElementById('question-target-display').textContent })`);
+        assert.deepEqual(mission, { number: '9 999,999', target: 'millares' });
+    });
+
+    test('las columnas decimales visibles se pueden alcanzar en móvil', async () => {
+        await client.evaluate(`document.body.classList.add('decimal-mode')`);
+        await client.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: false });
+        const layout = await client.evaluate(`(() => {
+            const wrapper = document.querySelector('.input-wrapper');
+            const lastColumn = document.querySelector('#src-thousandths').parentElement;
+            return {
+                visible: getComputedStyle(lastColumn).display !== 'none',
+                scrollable: wrapper.scrollWidth > wrapper.clientWidth,
+                inputReachable: lastColumn.getBoundingClientRect().right > wrapper.getBoundingClientRect().left
+            };
+        })()`);
+        assert.deepEqual(layout, { visible: true, scrollable: true, inputReachable: true });
+        await client.send('Emulation.clearDeviceMetricsOverride');
     });
 });

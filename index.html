@@ -38,14 +38,27 @@
             </div>
         </header>
 
-        <main>
+        <section id="start-screen" class="start-screen" aria-labelledby="start-title">
+            <h2 id="start-title">Prepara tu expedición</h2>
+            <p>Elige qué tipo de números quieres practicar. Puedes escribir tu nombre si quieres.</p>
+            <label for="player-name">Tu nombre (opcional)</label>
+            <input id="player-name" type="text" maxlength="40" autocomplete="off">
+            <fieldset>
+                <legend>Elige el modo de práctica</legend>
+                <label><input type="radio" name="game-mode" value="integer"> Números enteros</label>
+                <label><input type="radio" name="game-mode" value="decimal"> Números decimales</label>
+            </fieldset>
+            <button id="btn-start" class="btn-check" type="button">Empezar a jugar</button>
+        </section>
+
+        <main id="game-board" hidden>
             <!-- Pregunta en formato frase -->
             <div class="question-box" aria-live="polite">
                 Redondea el número <span id="question-number-display" class="highlight-number">000</span> a las <span id="question-target-display" class="highlight-text">...</span>
             </div>
 
             <div class="input-wrapper">
-                <table role="grid" aria-label="Tabla de valor posicional, desde millones hasta unidades">
+                <table role="grid" aria-label="Tabla de valor posicional, desde millones hasta milésimas">
                     <thead>
                         <tr>
                             <th>Número a redondear</th>
@@ -56,6 +69,9 @@
                             <th>C<br><span class="table-detail">Centenas</span></th>
                             <th>D<br><span class="table-detail">Decenas</span></th>
                             <th>U<br><span class="table-detail">Unidades</span></th>
+                            <th class="decimal-column">d<br><span class="table-detail">Décimas</span></th>
+                            <th class="decimal-column">c<br><span class="table-detail">Centésimas</span></th>
+                            <th class="decimal-column">m<br><span class="table-detail">Milésimas</span></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -72,9 +88,12 @@
                             <td><label class="digit-input-label" for="src-c">Centenas del número original</label><input type="text" id="src-c" maxlength="1" aria-label="Centenas del número original"></td>
                             <td><label class="digit-input-label" for="src-d">Decenas del número original</label><input type="text" id="src-d" maxlength="1" aria-label="Decenas del número original"></td>
                             <td><label class="digit-input-label" for="src-u">Unidades del número original</label><input type="text" id="src-u" maxlength="1" aria-label="Unidades del número original"></td>
+                            <td class="decimal-column"><label class="digit-input-label" for="src-tenths">Décimas del número original</label><input type="text" id="src-tenths" maxlength="1" aria-label="Décimas del número original"></td>
+                            <td class="decimal-column"><label class="digit-input-label" for="src-hundredths">Centésimas del número original</label><input type="text" id="src-hundredths" maxlength="1" aria-label="Centésimas del número original"></td>
+                            <td class="decimal-column"><label class="digit-input-label" for="src-thousandths">Milésimas del número original</label><input type="text" id="src-thousandths" maxlength="1" aria-label="Milésimas del número original"></td>
                         </tr>
                         
-                        <tr class="spacer-row"><td colspan="8"></td></tr>
+                        <tr class="spacer-row"><td colspan="11"></td></tr>
 
                         <!-- Fila 2: Resultado -->
                         <tr class="row-round">
@@ -89,6 +108,9 @@
                             <td><label class="digit-input-label" for="res-c">Centenas del resultado redondeado</label><input type="text" id="res-c" maxlength="1" aria-label="Centenas del resultado redondeado"></td>
                             <td><label class="digit-input-label" for="res-d">Decenas del resultado redondeado</label><input type="text" id="res-d" maxlength="1" aria-label="Decenas del resultado redondeado"></td>
                             <td><label class="digit-input-label" for="res-u">Unidades del resultado redondeado</label><input type="text" id="res-u" maxlength="1" aria-label="Unidades del resultado redondeado"></td>
+                            <td class="decimal-column"><label class="digit-input-label" for="res-tenths">Décimas del resultado redondeado</label><input type="text" id="res-tenths" maxlength="1" aria-label="Décimas del resultado redondeado"></td>
+                            <td class="decimal-column"><label class="digit-input-label" for="res-hundredths">Centésimas del resultado redondeado</label><input type="text" id="res-hundredths" maxlength="1" aria-label="Centésimas del resultado redondeado"></td>
+                            <td class="decimal-column"><label class="digit-input-label" for="res-thousandths">Milésimas del resultado redondeado</label><input type="text" id="res-thousandths" maxlength="1" aria-label="Milésimas del resultado redondeado"></td>
                         </tr>
                     </tbody>
                 </table>
@@ -126,7 +148,8 @@
         
         <div class="custom-form-group">
             <label for="custom-input-number">1. Escribe el número:</label>
-            <input type="number" id="custom-input-number" placeholder="Ej: 1450" min="10" max="999999" step="1" inputmode="numeric">
+            <input type="text" id="custom-input-number" placeholder="Ej: 1450 o 12,5" inputmode="decimal" aria-describedby="custom-number-help">
+            <small id="custom-number-help">Enteros: de 10 a 999 999. Decimales: de 0 a 9 999,999.</small>
         </div>
 
         <div class="custom-form-group">
