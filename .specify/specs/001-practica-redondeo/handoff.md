@@ -15,16 +15,19 @@ Usa `tasks.md` como lista de trabajo y marca las tareas al completarlas. Respeta
 
 Ampliar el juego web estático actual para que el alumnado de primaria elija, antes de jugar, entre el modo de números enteros y el modo de números decimales. El jugador puede indicar su nombre; los mensajes del juego lo usan cuando está disponible. Los errores muestran una corrección clara junto con ánimo para volver a intentarlo.
 
-El modo decimal permite practicar redondeos a millares, centenas, decenas, unidades, décimas, centésimas y milésimas. El número decimal se escribe con coma.
+El modo decimal permite practicar redondeos a millares, centenas, decenas, unidades, décimas y centésimas. El número decimal se escribe con coma.
 
 ## Decisiones de producto cerradas
 
 - El nombre del jugador es opcional y solo se conserva durante la sesión.
 - La selección del modo es obligatoria antes del primer ejercicio y solo se conserva durante la sesión.
-- El modo decimal acepta valores entre `0` y `9 999,999`, ambos incluidos, con hasta tres cifras decimales.
-- Las misiones personalizadas aceptan decimales en el modo decimal, con los mismos límites.
+- El modo decimal acepta valores entre `0` y `9.999,999`, ambos incluidos, con hasta tres cifras decimales.
+- El modo entero acepta valores entre `0` y `9.999.999`, ambos incluidos.
+- En modo entero se puede pedir redondear a decenas, centenas, unidades de millar, decenas de millar, centenas de millar, millones o decenas de millón; las unidades no son una posición objetivo.
+- Las misiones personalizadas aceptan números dentro del rango definido para el modo elegido.
+- La tabla posicional debe representar el acarreo hasta decenas de millón al redondear el máximo entero a centenas de millar.
 - Los empates con cifra siguiente igual o superior a 5 se redondean hacia arriba.
-- Se conserva la posición de milésimas aunque, con un máximo de tres decimales de entrada, el resultado pueda ser igual al valor original.
+- La tabla conserva la columna de milésimas para colocar el número original y consultar la cifra siguiente al redondear a centésimas; no se ofrece como objetivo.
 - El nivel y los aciertos son compartidos entre los modos y se conservan entre visitas. La racha y la pregunta actual son temporales.
 - Los errores deben mostrar mensajes amables y alentadores sin ocultar la corrección ni modificar la puntuación o las reglas de reintento.
 - GitHub Pages publica el sitio desde `main` y la carpeta raíz, bajo la ruta de proyecto `/redondea/`.

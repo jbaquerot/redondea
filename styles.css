@@ -93,8 +93,11 @@
         .start-screen input[type="radio"] { width: auto; height: auto; }
         :focus-visible { outline: 3px solid #ffd166 !important; outline-offset: 2px; }
         .decimal-column { display: none; }
+        .decimal-separator-column { width: 24px; min-width: 24px; padding-left: 2px; padding-right: 2px; font-weight: bold; }
+        .decimal-separator-column span { color: var(--primary-color); font-size: 1.5rem; }
+        body.decimal-mode .integer-large-column { display: none; }
         body.decimal-mode .decimal-column { display: table-cell; }
-        body.decimal-mode table { min-width: 980px; }
+        table { min-width: 850px; }
         @media (max-width: 500px) {
             .start-screen fieldset { display: block; }
             .header-top-row { align-items: flex-start; gap: .5rem; }

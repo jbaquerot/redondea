@@ -46,8 +46,8 @@ Como alumno, quiero ver un número y una posición de redondeo para practicar c�
 
 - **RF-01.1** Antes de iniciar la partida, el jugador elige el modo de números enteros o el modo de números decimales.
 - **RF-01.2** En el modo elegido, el juego presenta un número y una posición objetivo compatibles con ese tipo de número.
-- **RF-01.3** En modo entero se pueden practicar las posiciones desde unidades hasta centenas de millar; el comportamiento actual genera ejercicios progresivos de dos a seis cifras.
-- **RF-01.4** En modo decimal se puede redondear a millares, centenas, decenas, unidades, décimas, centésimas y milésimas, siempre que la posición sea pertinente para el número.
+- **RF-01.3** En modo entero se practican números entre 0 y 9.999.999, ambos incluidos. Las posiciones objetivo son decenas, centenas, unidades de millar, decenas de millar, centenas de millar, millones y decenas de millón. Los ejercicios se generan progresivamente según el nivel, dentro de ese rango.
+- **RF-01.4** En modo decimal se puede redondear a millares, centenas, decenas, unidades, décimas y centésimas, siempre que la posición sea pertinente para el número.
 - **RF-01.5** En modo decimal, el número distingue claramente la parte entera y la parte decimal mediante coma decimal; los millares se agrupan con espacios.
 
 ### HU-08: Preparar una partida
@@ -68,10 +68,10 @@ Como alumno, quiero practicar con números decimales para aprender el valor de s
 
 **Requisitos:**
 
-- **RF-09.1** El modo decimal genera ejercicios con parte entera y parte decimal entre 0 y 9 999,999, ambos incluidos.
+- **RF-09.1** El modo decimal genera ejercicios entre 0 y 9.999,999, ambos incluidos, con un máximo de tres cifras decimales.
 - **RF-09.2** La tabla permite representar hasta millares en la parte entera y hasta milésimas en la parte decimal.
-- **RF-09.3** La posición objetivo puede ser millares, centenas, decenas, unidades, décimas, centésimas o milésimas.
-- **RF-09.4** Los ejercicios admiten como máximo tres cifras decimales. Con esta precisión, redondear a milésimas conserva el mismo valor numérico; esta posición permite practicar su valor posicional.
+- **RF-09.3** La posición objetivo puede ser millares, centenas, decenas, unidades, décimas o centésimas; no se ofrece redondear a milésimas.
+- **RF-09.4** Los ejercicios admiten como máximo tres cifras decimales. La columna de milésimas permite colocar el número original y consultar la cifra siguiente al redondear a centésimas, pero no se puede seleccionar como posición objetivo.
 - **RF-09.5** El resultado se calcula y valida según la posición seleccionada y la regla de redondeo acordada.
 - **RF-09.6** El alumno puede pedir una pista y consultar la solución también en modo decimal.
 
@@ -92,7 +92,7 @@ Como alumno, quiero colocar cada cifra en su columna para entender el valor posi
 
 **Requisitos:**
 
-- **RF-02.1** El tablero ofrece posiciones enteras y, en modo decimal, columnas para décimas, centésimas y milésimas; admite el acarreo del resultado hasta millones cuando sea necesario.
+- **RF-02.1** El tablero ofrece posiciones enteras desde decenas de millón hasta unidades y, en modo decimal, muestra una columna no editable con la coma entre unidades y décimas, seguida de las columnas de décimas, centésimas y milésimas; admite el acarreo del resultado hasta decenas de millón cuando sea necesario.
 - **RF-02.2** Hay una fila para representar el número original y otra para representar el resultado redondeado.
 - **RF-02.3** Cada casilla admite como máximo una cifra y solo acepta dígitos.
 - **RF-02.4** Al introducir una cifra, el foco pasa a la casilla siguiente para facilitar la entrada con teclado.
@@ -132,7 +132,7 @@ Como alumno, quiero ver mis aciertos y mi progreso para continuar practicando.
 - **RF-05.3** Al alcanzar tres aciertos consecutivos, el juego ofrece avanzar un nivel, salvo que ya se haya alcanzado el nivel máximo.
 - **RF-05.4** El nivel y los aciertos se comparten entre los modos entero y decimal y se conservan entre visitas; la racha corresponde a la sesión de práctica actual.
 - **RF-05.5** El alumno puede solicitar el reinicio del progreso y debe confirmar antes de que se borren los aciertos y el nivel guardados.
-- **RF-05.6** El reinicio devuelve el juego al primer nivel y pone a cero la puntuación y la racha.
+- **RF-05.6** Tras confirmar el reinicio, el juego borra el progreso, pone a cero la puntuación y la racha y vuelve a la pantalla inicial para que el jugador introduzca de nuevo su nombre y elija un modo. El nombre y el modo anteriores se descartan.
 
 ### HU-06: Elegir una misión personalizada
 
@@ -140,13 +140,13 @@ Como alumno o persona que le acompaña, quiero indicar un número y una posició
 
 **Requisitos:**
 
-- **RF-06.1** En modo entero se puede elegir un número entre 10 y 999 999, ambos incluidos.
+- **RF-06.1** En modo entero se puede elegir un número entre 0 y 9.999.999, ambos incluidos.
 - **RF-06.2** En modo entero no se aceptan valores decimales ni valores fuera del rango permitido.
 - **RF-06.3** En modo decimal se puede introducir un número decimal personalizado, usando coma decimal.
-- **RF-06.4** Las posiciones disponibles dependen del modo y del valor introducido: el modo decimal permite elegir entre millares, centenas, decenas, unidades, décimas, centésimas y milésimas, cuando sean pertinentes.
+- **RF-06.4** Las posiciones disponibles dependen del modo y del valor introducido. En modo entero se puede elegir entre decenas, centenas, unidades de millar, decenas de millar, centenas de millar, millones y decenas de millón, cuando sean pertinentes. En modo decimal se puede elegir entre millares, centenas, decenas, unidades, décimas y centésimas, cuando sean pertinentes; milésimas no es una posición objetivo.
 - **RF-06.5** No se inicia la misión hasta que el número y una posición válida estén seleccionados.
 - **RF-06.6** Iniciar una misión personalizada no cambia el nivel ni los aciertos acumulados.
-- **RF-06.7** Para números decimales personalizados se admite el rango de 0 a 9 999,999, ambos incluidos, con un máximo de tres cifras decimales.
+- **RF-06.7** Para números decimales personalizados se admite el rango de 0 a 9.999,999, ambos incluidos, con un máximo de tres cifras decimales.
 
 ### HU-07: Usar el juego en distintos dispositivos
 
@@ -162,11 +162,12 @@ Como alumno, quiero poder completar ejercicios en una pantalla grande o pequeña
 
 - Un alumno puede completar el recorrido de un ejercicio, desde la descomposición hasta la validación del redondeo.
 - Antes de jugar, el alumno puede elegir el modo entero o decimal y puede indicar su nombre.
-- En modo decimal, el alumno puede resolver ejercicios hasta la posición de milésimas.
+- En modo decimal, el alumno puede resolver ejercicios hasta la posición de centésimas usando la cifra de milésimas como ayuda para decidir el redondeo.
 - Ante una respuesta incompleta o incorrecta, el alumno puede identificar qué paso debe revisar y volver a intentarlo.
 - Ante un error, el mensaje de corrección incluye ánimo adecuado para alumnado de primaria y puede usar el nombre elegido.
 - El alumno puede practicar con una pista, consultar la solución o iniciar un número personalizado dentro de los límites indicados.
 - Los aciertos y el nivel permanecen disponibles al regresar al juego; el reinicio requiere confirmación.
+- Después de confirmar el reinicio, el jugador vuelve a la pantalla para introducir su nombre y elegir el modo.
 - Las funciones principales se pueden utilizar en escritorio y móvil sin perder acceso al tablero ni a sus controles.
 
 ## 6. Límites del producto
@@ -181,11 +182,11 @@ Como alumno, quiero poder completar ejercicios en una pantalla grande o pequeña
 - El público principal es alumnado de primaria, confirmado por el usuario; no se ha indicado curso ni rango de edad.
 - La aplicación actual practica con enteros; el modo decimal, la selección inicial de modo, el nombre del jugador y los mensajes de ánimo son ampliaciones solicitadas que aún no están implementadas.
 - Debe confirmarse si la persona adulta que acompaña es un usuario objetivo formal o solo un contexto posible para las misiones personalizadas.
-- El nivel máximo 5 y los ejercicios progresivos de dos a seis cifras describen los límites actuales de la versión. Su validez pedagógica queda pendiente de confirmar.
+- El nivel máximo 5 describe el límite actual de la versión. Su validez pedagógica queda pendiente de confirmar; la generación progresiva debe permanecer dentro del rango entero de 0 a 9.999.999.
 - Para números no negativos, cuando la cifra inmediatamente a la derecha de la posición objetivo es 5 o más, se redondea hacia arriba; decisión confirmada para el modo entero y aplicada al modo decimal.
 - «Decimales» en la lista de posiciones significa «décimas»; confirmado por el usuario.
 - Se usa coma decimal y espacios para agrupar millares; confirmado por el usuario.
-- Las misiones personalizadas aceptan decimales en el modo decimal; confirmado por el usuario. El rango de 0 a 9 999,999 y el máximo de tres cifras decimales están confirmados. También está confirmado mantener la posición de milésimas aunque el resultado pueda ser igual al original, y compartir nivel y aciertos entre ambos modos.
+- El modo entero acepta números de 0 a 9.999.999 y el modo decimal acepta números de 0 a 9.999,999, ambos incluidos. Las misiones personalizadas respetan el rango de su modo. El modo decimal admite un máximo de tres cifras decimales y permite objetivos hasta centésimas; la columna de milésimas se conserva para descomponer y leer la cifra siguiente. El nivel y los aciertos se comparten entre ambos modos.
 
 ## 8. Fuera de alcance en esta especificación
 
@@ -195,7 +196,7 @@ Como alumno, quiero poder completar ejercicios en una pantalla grande o pequeña
 
 ## 9. Revisión y aceptación
 
-- **Claridad:** Sí. Los modos, las posiciones, los límites decimales, la personalización del nombre y los mensajes de ánimo están definidos. Se documenta que redondear a milésimas puede conservar el valor cuando ya tiene tres cifras decimales.
+- **Claridad:** Sí. Los modos, las posiciones, los límites decimales, la personalización del nombre y los mensajes de ánimo están definidos. La columna de milésimas es parte de la descomposición, no un objetivo de redondeo.
 - **Completitud:** Adecuada como borrador de producto. El curso concreto, la edad y la validación curricular no están definidos.
 - **Verificabilidad:** Sí. Cada requisito describe resultados observables que pueden comprobarse en el juego.
 - **Valor para el usuario:** Sí. Los requisitos cubren práctica con dos tipos de número, corrección comprensible, ánimo, ayuda y progreso para alumnado de primaria.

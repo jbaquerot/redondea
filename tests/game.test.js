@@ -110,9 +110,9 @@ function createGame({ savedProgress = null, random = () => 0, autoStart = true }
     return { game, elements, localStore, alerts, modes, body };
 }
 
-const placeIds = ['m', 'cm', 'dm', 'um', 'c', 'd', 'u'];
+const placeIds = ['dmi', 'm', 'cm', 'dm', 'um', 'c', 'd', 'u'];
 function enterDigits(elements, prefix, number) {
-    const digits = String(number).padStart(7, '0');
+    const digits = String(number).padStart(8, '0');
     placeIds.forEach((place, index) => {
         elements.get(`${prefix}-${place}`).value = digits[index];
     });
@@ -137,6 +137,19 @@ test('redondea correctamente por debajo, en y por encima del umbral 5', () => {
     }
 });
 
+test('el modo entero ofrece objetivos desde decenas hasta decenas de millón, sin unidades', () => {
+    const { game } = createGame();
+    const expectedTargets = [10000000, 1000000, 100000, 10000, 1000, 100, 10];
+    assert.deepEqual(JSON.parse(JSON.stringify(game.integerPlaces.map(place => place.val))), expectedTargets);
+    assert.deepEqual(JSON.parse(JSON.stringify(game.getValidPlaces(0).map(place => place.val))), [10]);
+    assert.ok(game.getValidPlaces(9999999).some(place => place.val === 10000000));
+    assert.equal(game.integerPlaces.some(place => place.val === 1), false);
+
+    game.state.currentNumber = 9999999;
+    game.state.currentTargetValue = 10000000;
+    assert.equal(game.calculateCorrectAnswer(), 10000000);
+});
+
 test('permite representar y comprobar el resultado 1 000 000', () => {
     const { game, elements } = createGame();
     setQuestion(game, 999999, 100000);
@@ -151,7 +164,19 @@ test('permite representar y comprobar el resultado 1 000 000', () => {
     assert.equal(elements.get('btn-next').style.display, 'inline-block');
 });
 
-test('lee correctamente las siete posiciones decimales', () => {
+test('representa el máximo entero y el acarreo hasta 10 000 000', () => {
+    const { game, elements } = createGame();
+    setQuestion(game, 9999999, 100000);
+    enterDigits(elements, 'src', 9999999);
+    enterDigits(elements, 'res', 10000000);
+    game.checkAnswer();
+    assert.equal(game.readNumberFromRow('src').val, 9999999);
+    assert.equal(game.readNumberFromRow('res').val, 10000000);
+    assert.equal(game.state.score, 1);
+    assert.equal(elements.get('res-dmi').value, '1');
+});
+
+test('lee correctamente las ocho posiciones enteras de la tabla', () => {
     const { game, elements } = createGame();
     enterDigits(elements, 'src', 1234567);
     assert.deepEqual(JSON.parse(JSON.stringify(game.readNumberFromRow('src'))), {
@@ -243,14 +268,53 @@ test('rechaza decimales y números fuera del máximo personalizado', () => {
     const input = elements.get('custom-input-number');
     const select = elements.get('custom-target-select');
 
-    for (const value of ['10.5', '1000000']) {
+    for (const value of ['10.5', '10000000']) {
         input.value = value;
         input.dispatch('input');
         assert.equal(select.disabled, true);
         elements.get('btn-custom-start').dispatch('click');
-        assert.match(alerts.at(-1), /entero entre 10 y 999 999/);
+        assert.match(alerts.at(-1), /entero entre 0 y 9 999 999/);
     }
-    assert.equal(game.state.currentNumber, 11);
+    assert.equal(game.state.currentNumber, 0);
+});
+
+test('acepta misiones enteras en cero y en 9 999 999', () => {
+    const { game, elements } = createGame();
+    const input = elements.get('custom-input-number'), select = elements.get('custom-target-select');
+    input.value = '0'; input.dispatch('input');
+    assert.ok(select.options.some(option => option.value === 10));
+    assert.equal(select.options.some(option => option.value === 1), false);
+    select.value = '10'; elements.get('btn-custom-start').dispatch('click');
+    assert.equal(game.state.currentNumber, 0);
+    assert.equal(game.state.currentTargetValue, 10);
+    assert.equal(elements.get('question-number-display').textContent, '0');
+
+    input.value = '9999999'; input.dispatch('input');
+    assert.equal(select.disabled, false);
+    assert.ok(select.options.some(option => option.value === 10000000));
+    select.value = '100000'; elements.get('btn-custom-start').dispatch('click');
+    assert.equal(game.state.currentNumber, 9999999);
+    assert.equal(game.state.currentTargetValue, 100000);
+    assert.equal(elements.get('question-number-display').textContent, '9 999 999');
+});
+
+test('la generación entera y decimal alcanza cero y sus máximos', () => {
+    const { game } = createGame({ random: () => 0 });
+    assert.equal(game.state.currentNumber, 0);
+    game.state.level = 5;
+    game.nextQuestion();
+    assert.equal(game.state.currentNumber, 0);
+
+    const upper = createGame({ random: () => 1 - Number.EPSILON }).game;
+    upper.state.level = 5;
+    upper.nextQuestion();
+    assert.equal(upper.state.currentNumber, 9999999);
+
+    upper.state.mode = 'decimal';
+    upper.state.level = 3;
+    upper.nextQuestion();
+    assert.equal(upper.state.currentNumber, 9999999);
+    assert.equal(upper.formatNumber(upper.state.currentNumber), '9 999,999');
 });
 
 test('la racha de tres aciertos abre el modal y avanzar desbloquea el nivel siguiente', () => {
@@ -265,6 +329,29 @@ test('la racha de tres aciertos abre el modal y avanzar desbloquea el nivel sigu
     elements.get('btn-level-continue').dispatch('click');
     assert.equal(game.state.level, 2);
     assert.equal(game.state.streak, 0);
+});
+
+test('reiniciar confirma, borra el progreso y vuelve a la pantalla de selección', () => {
+    const { game, elements, localStore, modes, body } = createGame({ savedProgress: { level: 4, score: 20 } });
+    game.state.streak = 2;
+    game.state.playerName = 'Nora';
+    modes[0].checked = true;
+    elements.get('player-name').value = 'Nora';
+
+    game.resetGame();
+
+    assert.equal(game.state.level, 1);
+    assert.equal(game.state.score, 0);
+    assert.equal(game.state.streak, 0);
+    assert.equal(game.state.mode, null);
+    assert.equal(game.state.playerName, '');
+    assert.equal(localStore.has('jurassicRoundGame_v5'), false);
+    assert.equal(elements.get('start-screen').hidden, false);
+    assert.equal(elements.get('game-board').hidden, true);
+    assert.equal(elements.get('player-name').value, '');
+    assert.equal(elements.get('player-name').focused, true);
+    assert.equal(modes.some(mode => mode.checked), false);
+    assert.equal(body.classList['decimal-mode'], false);
 });
 
 test('exige elegir el modo antes de mostrar el tablero y conserva nombre y modo en la sesión', () => {
@@ -299,7 +386,7 @@ test('redondea decimales en cada posición, incluidos empates y acarreos', () =>
         [14999, 10000, 10000], [15000, 10000, 20000],
         [1499, 1000, 1000], [1500, 1000, 2000],
         [1234, 100, 1200], [1250, 100, 1300],
-        [1235, 10, 1240], [1235, 1, 1235], [9999999, 1000000, 10000000]
+        [1235, 10, 1240], [9999999, 1000000, 10000000]
     ];
     for (const [number, place, expected] of cases) {
         game.state.currentNumber = number;
@@ -310,18 +397,19 @@ test('redondea decimales en cada posición, incluidos empates y acarreos', () =>
     assert.equal(game.formatNumber(12050), '12,05');
 });
 
-test('lee las posiciones decimales y valida el redondeo a milésimas sin cambiar el valor', () => {
+test('lee las milésimas para redondear a centésimas, pero no ofrece milésimas como objetivo', () => {
     const { game, elements } = createGame();
     game.state.mode = 'decimal';
     game.state.currentNumber = 12345;
-    game.state.currentTargetValue = 1;
-    const digits = '0000012345';
+    game.state.currentTargetValue = 10;
+    const digits = '00000012345';
     game.digitIds.forEach((id, index) => { elements.get(`src-${id}`).value = digits[index]; });
     const original = game.readNumberFromRow('src');
     assert.equal(original.val, 12345);
-    assert.equal(game.calculateCorrectAnswer(), 12345);
+    assert.equal(game.calculateCorrectAnswer(), 12350);
+    assert.equal(game.decimalPlaces.some(place => place.val === 1), false);
     game.showHint();
-    assert.match(elements.get('feedback-area').innerHTML, /se mantiene/);
+    assert.match(elements.get('feedback-area').innerHTML, /cifra es <b>5<\/b>/);
 });
 
 test('acepta una misión decimal y ofrece posiciones decimales válidas', () => {
@@ -330,7 +418,8 @@ test('acepta una misión decimal y ofrece posiciones decimales válidas', () => 
     const input = elements.get('custom-input-number'), select = elements.get('custom-target-select');
     input.value = '9 999,999'; input.dispatch('input');
     assert.equal(select.disabled, false);
-    assert.ok(select.options.some(option => option.value === 1));
+    assert.ok(select.options.some(option => option.value === 10), 'las centésimas siguen disponibles');
+    assert.equal(select.options.some(option => option.value === 1), false, 'las milésimas no son una posición objetivo');
     select.value = '1000000';
     elements.get('btn-custom-start').dispatch('click');
     assert.equal(game.state.currentNumber, 9999999);
@@ -346,13 +435,13 @@ test('el progreso guardado es común al modo decimal y los mensajes sin nombre s
     game.state.currentNumber = 12345;
     game.state.currentTargetValue = 10;
     game.state.currentTarget = 'centésimas';
-    const digits = '0000012345';
+    const digits = '00000012345';
     game.digitIds.forEach((id, index) => {
         elements.get(`src-${id}`).value = digits[index];
         elements.get(`res-${id}`).value = '0';
     });
     // 12,345 redondeado a centésimas es 12,35 (unidades enteras de milésima: 12350).
-    const resultDigits = '0000012350';
+    const resultDigits = '00000012350';
     game.digitIds.forEach((id, index) => { elements.get(`res-${id}`).value = resultDigits[index]; });
     game.checkAnswer();
     assert.equal(game.state.score, 13);

@@ -102,8 +102,8 @@ async function waitUntil(check, description, timeoutMs = 15000) {
 }
 
 function fillRow(prefix, number) {
-    const places = ['m', 'cm', 'dm', 'um', 'c', 'd', 'u'];
-    const digits = String(number).padStart(7, '0');
+    const places = ['dmi', 'm', 'cm', 'dm', 'um', 'c', 'd', 'u'];
+    const digits = String(number).padStart(8, '0');
     return places.map((place, index) => {
         const id = `${prefix}-${place}`;
         return `(() => { const el = document.getElementById('${id}'); el.value = '${digits[index]}'; el.dispatchEvent(new Event('input', { bubbles: true })); })()`;
@@ -177,6 +177,7 @@ describe('Pruebas de navegador en Chrome headless', { concurrency: false }, () =
                 scriptLoaded: [...document.scripts].some(script => script.src.endsWith('/app.js')),
                 placeColumns: document.querySelectorAll('thead th').length,
                 digitInputs: document.querySelectorAll('.digit-input-label').length,
+                largeIntegerColumnsVisible: [...document.querySelectorAll('thead .integer-large-column')].every(column => getComputedStyle(column).display !== 'none'),
                 projectPath: location.pathname
             };
         })()`);
@@ -185,8 +186,9 @@ describe('Pruebas de navegador en Chrome headless', { concurrency: false }, () =
         assert.equal(rendered.panelVisible, true);
         assert.equal(rendered.stylesheetLoaded, true);
         assert.equal(rendered.scriptLoaded, true);
-        assert.equal(rendered.placeColumns, 11);
-        assert.equal(rendered.digitInputs, 20);
+        assert.equal(rendered.placeColumns, 13);
+        assert.equal(rendered.digitInputs, 22);
+        assert.equal(rendered.largeIntegerColumnsVisible, true);
         assert.equal(rendered.projectPath, '/redondea/');
     });
 
@@ -222,7 +224,7 @@ describe('Pruebas de navegador en Chrome headless', { concurrency: false }, () =
             lastInteger.value = '4'; lastInteger.dispatchEvent(new Event('input', { bubbles: true }));
             return document.activeElement.id;
         })()`);
-        assert.equal(nextRow, 'res-m');
+        assert.equal(nextRow, 'res-dmi');
     });
 
     test('un clic en Comprobar valida la respuesta y actualiza la puntuación', async () => {
@@ -247,23 +249,27 @@ describe('Pruebas de navegador en Chrome headless', { concurrency: false }, () =
     });
 
     test('el modal personalizado permite elegir un número, una posición y empezar', async () => {
-        await client.evaluate(`(() => {
+        const integerTargets = await client.evaluate(`(() => {
             document.getElementById('btn-custom').click();
             const input = document.getElementById('custom-input-number');
-            input.value = '999999';
+            input.value = '9999999';
             input.dispatchEvent(new Event('input', { bubbles: true }));
             const select = document.getElementById('custom-target-select');
+            const targets = [...select.options].map(option => Number(option.value));
             select.value = '100000';
             document.getElementById('btn-custom-start').click();
+            return targets;
         })()`);
         const result = await client.evaluate(`({
             number: document.getElementById('question-number-display').textContent,
             target: document.getElementById('question-target-display').textContent,
             modalDisplay: getComputedStyle(document.getElementById('custom-modal')).display
         })`);
-        assert.equal(result.number, '999 999');
+        assert.equal(result.number, '9 999 999');
         assert.equal(result.target, 'centenas de millar');
         assert.equal(result.modalDisplay, 'none');
+        assert.ok(integerTargets.includes(10000000), 'decenas de millón disponible en el máximo');
+        assert.equal(integerTargets.includes(1), false, 'unidades no disponibles como objetivo');
     });
 
     test('el botón de solución rellena el millón y habilita Siguiente', async () => {
@@ -312,11 +318,17 @@ describe('Pruebas de navegador en Chrome headless', { concurrency: false }, () =
             document.getElementById('btn-custom').click();
             const input = document.getElementById('custom-input-number');
             input.value = '9 999,999'; input.dispatchEvent(new Event('input', { bubbles: true }));
-            document.getElementById('custom-target-select').value = '1000000';
+            const targetSelect = document.getElementById('custom-target-select');
+            targetSelect.value = '1000000';
+            const targetValues = [...targetSelect.options].map(option => Number(option.value));
             document.getElementById('btn-custom-start').click();
+            window.customTargetValues = targetValues;
         })()`);
         const mission = await client.evaluate(`({ number: document.getElementById('question-number-display').textContent, target: document.getElementById('question-target-display').textContent })`);
         assert.deepEqual(mission, { number: '9 999,999', target: 'millares' });
+        const decimalTargets = await client.evaluate('window.customTargetValues');
+        assert.ok(decimalTargets.includes(10), 'centésimas disponibles');
+        assert.equal(decimalTargets.includes(1), false, 'milésimas no disponibles como objetivo');
     });
 
     test('las columnas decimales visibles se pueden alcanzar en móvil', async () => {
@@ -325,13 +337,66 @@ describe('Pruebas de navegador en Chrome headless', { concurrency: false }, () =
         const layout = await client.evaluate(`(() => {
             const wrapper = document.querySelector('.input-wrapper');
             const lastColumn = document.querySelector('#src-thousandths').parentElement;
+            const unitsCell = document.querySelector('#src-u').parentElement;
+            const separatorCell = document.querySelector('.row-decompose .decimal-separator-column');
+            const separatorHeader = document.querySelector('thead .decimal-separator-column');
+            const tenthsCell = document.querySelector('#src-tenths').parentElement;
             return {
                 visible: getComputedStyle(lastColumn).display !== 'none',
+                largeIntegerColumnsHidden: [...document.querySelectorAll('.integer-large-column')].every(column => getComputedStyle(column).display === 'none'),
+                decimalColumnsVisible: [...document.querySelectorAll('.decimal-column')].every(column => getComputedStyle(column).display !== 'none'),
+                thousandsVisible: getComputedStyle(document.querySelector('#src-um').parentElement).display !== 'none',
+                separatorText: separatorCell.textContent.trim(),
+                separatorHeaderText: separatorHeader.textContent.trim(),
+                separatorNotEditable: separatorCell.querySelector('input') === null,
+                separatorBetweenUnitsAndTenths: separatorCell.previousElementSibling === unitsCell && separatorCell.nextElementSibling === tenthsCell,
                 scrollable: wrapper.scrollWidth > wrapper.clientWidth,
                 inputReachable: lastColumn.getBoundingClientRect().right > wrapper.getBoundingClientRect().left
             };
         })()`);
-        assert.deepEqual(layout, { visible: true, scrollable: true, inputReachable: true });
+        assert.deepEqual(layout, {
+            visible: true,
+            largeIntegerColumnsHidden: true,
+            decimalColumnsVisible: true,
+            thousandsVisible: true,
+            separatorText: ',',
+            separatorHeaderText: ',',
+            separatorNotEditable: true,
+            separatorBetweenUnitsAndTenths: true,
+            scrollable: true,
+            inputReachable: true
+        });
         await client.send('Emulation.clearDeviceMetricsOverride');
+    });
+
+    test('Reiniciar Juego vuelve al inicio y limpia nombre y modo', async () => {
+        await client.evaluate(`(() => {
+            Game.state.playerName = 'Iris';
+            Game.state.level = 3; Game.state.score = 8; Game.state.streak = 1;
+            Game.saveProgress();
+            document.getElementById('player-name').value = 'Iris';
+            window.confirm = () => true;
+            document.getElementById('btn-reset').click();
+        })()`);
+        const result = await client.evaluate(`({
+            startVisible: !document.getElementById('start-screen').hidden,
+            boardHidden: document.getElementById('game-board').hidden,
+            name: document.getElementById('player-name').value,
+            selectedModes: [...document.querySelectorAll('input[name="game-mode"]')].filter(mode => mode.checked).length,
+            level: document.getElementById('level-display').textContent,
+            score: document.getElementById('score-display').textContent,
+            streak: document.getElementById('streak-display').textContent,
+            savedProgress: localStorage.getItem('jurassicRoundGame_v5')
+        })`);
+        assert.deepEqual(result, {
+            startVisible: true,
+            boardHidden: true,
+            name: '',
+            selectedModes: 0,
+            level: 'Nivel: 1',
+            score: 'Aciertos: 0',
+            streak: 'Racha: 0/3',
+            savedProgress: null
+        });
     });
 });

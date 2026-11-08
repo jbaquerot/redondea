@@ -6,17 +6,17 @@ const Game = {
     },
     dinoEmojis: ['🦖', '🦕', '🦎', '🐊', '🐉', '🦴', '🥚'],
     integerPlaces: [
-        { val: 1, label: 'unidades', id: 'u' }, { val: 10, label: 'decenas', id: 'd' },
-        { val: 100, label: 'centenas', id: 'c' }, { val: 1000, label: 'unidades de millar', id: 'um' },
-        { val: 10000, label: 'decenas de millar', id: 'dm' }, { val: 100000, label: 'centenas de millar', id: 'cm' }
+        { val: 10000000, label: 'decenas de millón', id: 'dmi' }, { val: 1000000, label: 'millones', id: 'm' },
+        { val: 100000, label: 'centenas de millar', id: 'cm' }, { val: 10000, label: 'decenas de millar', id: 'dm' },
+        { val: 1000, label: 'unidades de millar', id: 'um' }, { val: 100, label: 'centenas', id: 'c' },
+        { val: 10, label: 'decenas', id: 'd' }
     ],
     decimalPlaces: [
         { val: 1000000, label: 'millares', id: 'um' }, { val: 100000, label: 'centenas', id: 'c' },
         { val: 10000, label: 'decenas', id: 'd' }, { val: 1000, label: 'unidades', id: 'u' },
-        { val: 100, label: 'décimas', id: 'tenths' }, { val: 10, label: 'centésimas', id: 'hundredths' },
-        { val: 1, label: 'milésimas', id: 'thousandths' }
+        { val: 100, label: 'décimas', id: 'tenths' }, { val: 10, label: 'centésimas', id: 'hundredths' }
     ],
-    digitIds: ['m', 'cm', 'dm', 'um', 'c', 'd', 'u', 'tenths', 'hundredths', 'thousandths'],
+    digitIds: ['dmi', 'm', 'cm', 'dm', 'um', 'c', 'd', 'u', 'tenths', 'hundredths', 'thousandths'],
     init() {
         this.randomizeHeaderDino(); this.loadProgress(); this.setupInputs(); this.bindControls(); this.setupCustomModalListener();
     },
@@ -67,9 +67,16 @@ const Game = {
         if (!confirm('¿Estás seguro de que quieres reiniciar todo el progreso?')) return;
         try { localStorage.removeItem('jurassicRoundGame_v5'); } catch (e) {}
         this.state.level = 1; this.state.score = 0; this.state.streak = 0; this.state.isAnswered = false;
+        this.state.currentNumber = 0; this.state.currentTarget = ''; this.state.currentTargetValue = 10;
+        this.state.mode = null; this.state.playerName = '';
+        document.getElementById('player-name').value = '';
+        document.querySelectorAll('input[name="game-mode"]').forEach(input => { input.checked = false; });
+        document.body.classList.toggle('decimal-mode', false);
+        document.getElementById('start-screen').hidden = false;
+        document.getElementById('game-board').hidden = true;
+        this.resetUI();
         this.randomizeHeaderDino(); this.updateStats();
-        if (this.state.mode) this.nextQuestion();
-        this.showFeedback(this.greet('Progreso reiniciado. ¡Puedes empezar de nuevo!'), 'neutral');
+        document.getElementById('player-name').focus();
     },
     setupInputs() {
         const ids = [...this.digitIds.map(id => `src-${id}`), ...this.digitIds.map(id => `res-${id}`)];
@@ -77,7 +84,7 @@ const Game = {
             const inp = document.getElementById(id);
             inp.addEventListener('input', e => {
                 e.target.value = e.target.value.replace(/[^0-9]/g, '').slice(0, 1);
-                const activePlaces = this.state.mode === 'decimal' ? this.digitIds : this.digitIds.slice(0, 7);
+                const activePlaces = this.state.mode === 'decimal' ? this.digitIds : this.digitIds.slice(0, 8);
                 const order = [...activePlaces.map(place => `src-${place}`), ...activePlaces.map(place => `res-${place}`)];
                 const nextId = order[order.indexOf(id) + 1];
                 if (e.target.value && nextId) { const next = document.getElementById(nextId); next.focus(); next.select(); }
@@ -91,6 +98,17 @@ const Game = {
         const [whole, fraction = ''] = normalized.split(',');
         const value = Number(whole) * 1000 + Number((fraction + '000').slice(0, 3));
         return Number.isSafeInteger(value) && value <= 9999999 ? value : null;
+    },
+    getValidPlaces(value) {
+        return this.places.filter(place => this.state.mode === 'decimal'
+            ? place.val <= 1000 || place.val <= value
+            : place.val <= Math.max(value, 10) || (place.val === 10000000 && value >= 5000000));
+    },
+    maxNumberForLevel() {
+        const limits = this.state.mode === 'decimal'
+            ? [99999, 999999, 9999999, 9999999, 9999999]
+            : [99, 999, 9999, 99999, 9999999];
+        return limits[Math.min(this.state.level, 5) - 1];
     },
     formatNumber(value) {
         if (this.state.mode !== 'decimal') return String(value).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
@@ -107,14 +125,12 @@ const Game = {
         const raw = input.value.trim();
         select.innerHTML = '';
         const val = this.state.mode === 'decimal' ? this.parseDecimal(raw) : (/^\d+$/.test(raw) ? Number(raw) : null);
-        const min = this.state.mode === 'decimal' ? 0 : 10;
-        const max = this.state.mode === 'decimal' ? 9999999 : 999999;
-        if (val === null || val < min || val > max) {
+        if (val === null || val < 0 || val > 9999999) {
             const opt = document.createElement('option');
-            opt.text = this.state.mode === 'decimal' ? 'Usa un número entre 0 y 9 999,999 (hasta tres decimales)' : 'Escribe un entero entre 10 y 999 999';
+            opt.text = this.state.mode === 'decimal' ? 'Usa un número entre 0 y 9 999,999 (hasta tres decimales)' : 'Escribe un entero entre 0 y 9 999 999';
             select.add(opt); select.disabled = true; return;
         }
-        const valid = this.places.filter(place => this.state.mode === 'decimal' ? place.val <= 1000 || place.val <= val : place.val <= val);
+        const valid = this.getValidPlaces(val);
         valid.forEach(place => { const opt = document.createElement('option'); opt.value = place.val; opt.text = place.label[0].toUpperCase() + place.label.slice(1); select.add(opt); });
         select.disabled = valid.length === 0;
     },
@@ -132,9 +148,9 @@ const Game = {
         const raw = input.value.trim();
         const num = this.state.mode === 'decimal' ? this.parseDecimal(raw) : (/^\d+$/.test(raw) ? Number(raw) : null);
         const target = Number(select.value), place = this.places.find(p => p.val === target);
-        const min = this.state.mode === 'decimal' ? 0 : 10, max = this.state.mode === 'decimal' ? 9999999 : 999999;
-        if (num === null || num < min || num > max) { alert(this.state.mode === 'decimal' ? 'Introduce un decimal entre 0 y 9 999,999 con hasta tres cifras decimales.' : 'Introduce un número entero entre 10 y 999 999.'); return; }
-        if (!place) { alert('Selecciona una posición válida para ese número.'); return; }
+        const max = 9999999;
+        if (num === null || num < 0 || num > max) { alert(this.state.mode === 'decimal' ? 'Introduce un decimal entre 0 y 9 999,999 con hasta tres cifras decimales.' : 'Introduce un entero entre 0 y 9 999 999.'); return; }
+        if (!place || !this.getValidPlaces(num).some(validPlace => validPlace.val === target)) { alert('Selecciona una posición válida para ese número.'); return; }
         this.state.isAnswered = false; this.resetUI(); this.state.currentNumber = num;
         this.state.currentTargetValue = target; this.state.currentTarget = place.label;
         this.renderQuestion(); this.clearDigits(); this.closeCustomModal();
@@ -142,16 +158,9 @@ const Game = {
     nextQuestion() {
         if (!this.state.mode) return;
         this.state.isAnswered = false; this.resetUI();
-        const digits = Math.min(this.state.level + 1, this.state.mode === 'decimal' ? 4 : 6);
-        if (this.state.mode === 'integer') {
-            const min = Math.max(11, 10 ** (digits - 1)), max = 10 ** digits - 1;
-            this.state.currentNumber = Math.floor(Math.random() * (max - min + 1)) + min;
-        } else {
-            const min = digits <= 2 ? 10000 : 10 ** (digits + 2);
-            const max = Math.min(9999999, 10 ** (digits + 3) - 1);
-            this.state.currentNumber = Math.floor(Math.random() * (max - min + 1)) + min;
-        }
-        const valid = this.places.filter(place => this.state.mode === 'decimal' ? place.val <= 1000 || place.val <= this.state.currentNumber : place.val <= this.state.currentNumber);
+        const max = this.maxNumberForLevel();
+        this.state.currentNumber = Math.floor(Math.random() * (max + 1));
+        const valid = this.getValidPlaces(this.state.currentNumber);
         const target = valid[Math.floor(Math.random() * valid.length)];
         this.state.currentTarget = target.label; this.state.currentTargetValue = target.val;
         this.renderQuestion(); this.clearDigits();
@@ -169,9 +178,14 @@ const Game = {
     readNumberFromRow(prefix) {
         let total = 0, isEmpty = true;
         this.digitIds.forEach((id, index) => {
-            if (this.state.mode !== 'decimal' && index > 6) return;
+            if (this.state.mode !== 'decimal' && index > 7) return;
             const el = document.getElementById(`${prefix}-${id}`);
-            if (el.value !== '') { isEmpty = false; const weights = [1000000000, 100000000, 10000000, 1000000, 100000, 10000, 1000, 100, 10, 1]; total += Number(el.value) * (this.state.mode === 'decimal' ? weights[index] : [1000000,100000,10000,1000,100,10,1][index]); }
+            if (el.value !== '') {
+                isEmpty = false;
+                const decimalWeights = [10000000000, 1000000000, 100000000, 10000000, 1000000, 100000, 10000, 1000, 100, 10, 1];
+                const integerWeights = [10000000, 1000000, 100000, 10000, 1000, 100, 10, 1];
+                total += Number(el.value) * (this.state.mode === 'decimal' ? decimalWeights[index] : integerWeights[index]);
+            }
         });
         return { val: total, isEmpty };
     },
@@ -197,11 +211,6 @@ const Game = {
     showLevelModal() { document.getElementById('level-modal').style.display = 'flex'; },
     closeModal() { document.getElementById('level-modal').style.display = 'none'; this.state.level++; this.state.streak = 0; this.updateStats(); this.saveProgress(); this.nextQuestion(); },
     showHint() {
-        if (this.state.mode === 'decimal' && this.state.currentTargetValue === 1) {
-            this.showFeedback(`El número ya tiene hasta tres cifras decimales, así que al redondear a las milésimas se mantiene.`, 'neutral');
-            document.getElementById('btn-solve').style.display = 'inline-block';
-            return;
-        }
         const divisor = this.state.currentTargetValue / 10;
         const digit = Math.floor(this.state.currentNumber / divisor) % 10;
         this.showFeedback(`Para redondear a las <b>${this.state.currentTarget}</b>, fíjate en la cifra siguiente. En ${this.formatNumber(this.state.currentNumber)}, esa cifra es <b>${digit}</b>. ${digit >= 5 ? 'Es 5 o más: subimos.' : 'Es menor que 5: se mantiene.'}`, 'neutral');
@@ -210,10 +219,10 @@ const Game = {
     showSolution() {
         const correct = this.calculateCorrectAnswer(); this.showFeedback(`<strong>Solución: ${this.formatNumber(correct)}</strong>`, 'neutral');
         this.digitIds.forEach(id => { document.getElementById(`res-${id}`).value = ''; });
-        const places = this.state.mode === 'decimal' ? String(correct).padStart(10, '0') : String(correct).padStart(7, '0');
+        const places = String(correct).padStart(this.state.mode === 'decimal' ? 11 : 8, '0');
         this.digitIds.forEach((id, index) => {
             if (this.state.mode === 'decimal') document.getElementById(`res-${id}`).value = places[index];
-            else if (index < 7) document.getElementById(`res-${id}`).value = places[index];
+            else if (index < 8) document.getElementById(`res-${id}`).value = places[index];
         });
         this.state.isAnswered = true; document.getElementById('btn-check').style.display = 'none'; document.getElementById('btn-next').style.display = 'inline-block';
     },

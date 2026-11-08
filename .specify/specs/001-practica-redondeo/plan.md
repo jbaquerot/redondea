@@ -30,7 +30,7 @@ El script seguirá cargándose con `defer`. Se conservará la política CSP del 
 | Inicio/configuración | Capturar nombre opcional, exigir la elección del modo y comenzar la partida. | `index.html`, `app.js`, `styles.css` |
 | Estado de partida | Mantener modo, nombre, nivel, aciertos, racha, número, posición objetivo y estado de respuesta. | `app.js` |
 | Generador de ejercicios | Producir ejercicios del modo elegido dentro de los límites de la especificación y elegir una posición válida. | `app.js` |
-| Tabla posicional | Mostrar posiciones enteras y, en modo decimal, décimas, centésimas y milésimas en las filas del número y del resultado. | `index.html`, `styles.css` |
+| Tabla posicional | Mostrar desde decenas de millón hasta unidades y, en modo decimal, décimas, centésimas y milésimas en las filas del número y del resultado. | `index.html`, `styles.css` |
 | Lectura y validación | Leer las cifras, validar primero el número original y después el resultado redondeado. | `app.js` |
 | Operaciones numéricas | Analizar la coma decimal, calcular redondeos exactos y formatear números para presentación. | `app.js` |
 | Ayudas y feedback | Mostrar pista, solución, corrección alentadora y mensajes que pueden usar el nombre del jugador. | `app.js`, `index.html` |
@@ -44,7 +44,9 @@ Las responsabilidades actuales se concentran en el objeto `Game` de `app.js`. Se
 
 - Añadir una vista inicial con nombre opcional y selector de modo; el tablero de preguntas no empieza hasta escoger uno.
 - Mantener nombre y modo en el estado de la partida mientras se juega.
+- El control de reinicio, tras confirmar, borra progreso y datos temporales de partida y devuelve al jugador a la pantalla inicial para elegir nombre y modo.
 - Incluir en el tablero decimal columnas para décimas, centésimas y milésimas, además de las posiciones enteras existentes.
+- Insertar entre unidades y décimas una columna fija con la coma decimal, sin campo editable.
 - Mantener una casilla por cifra para que la descomposición posicional y el avance de foco sigan funcionando con teclado.
 - En el campo de misión decimal, aceptar la coma como separador decimal y validar rango y máximo de tres cifras decimales.
 - Personalizar con el nombre los mensajes de bienvenida, corrección, ánimo y resultado cuando se haya proporcionado; si no hay nombre, usar mensajes neutrales.
@@ -56,12 +58,13 @@ Las responsabilidades actuales se concentran en el objeto `Game` de `app.js`. Se
 
 ### Representación y redondeo
 
-- Los valores son no negativos. El modo entero mantiene el rango y las posiciones enteras de la especificación.
-- El modo decimal acepta valores desde `0` hasta `9 999,999`, con un máximo de tres cifras después de la coma.
+- El modo entero acepta valores desde `0` hasta `9.999.999`, incluidos ambos extremos. La generación progresiva y las misiones personalizadas respetan estos límites.
+- Las posiciones objetivo del modo entero son decenas, centenas, unidades de millar, decenas de millar, centenas de millar, millones y decenas de millón. Las unidades se usan para representar el número, pero no se ofrecen para redondear.
+- El modo decimal acepta valores desde `0` hasta `9.999,999`, incluidos ambos extremos, con un máximo de tres cifras después de la coma. Para la presentación del número se agrupan los millares con espacios (por ejemplo, `9 999,999`).
 - Internamente, el modo decimal debe evitar cálculos con coma flotante binaria para que validación y redondeo no dependan de errores de precisión. Una representación propuesta es convertir el valor a milésimas enteras: `12,345` se representa como `12345` unidades de milésima.
-- Las posiciones de redondeo se convierten a pasos de esa unidad: millares `1 000 000`, centenas `100 000`, decenas `10 000`, unidades `1 000`, décimas `100`, centésimas `10` y milésimas `1`.
-- Se redondea al múltiplo más próximo y los empates suben. En la posición de milésimas, si la entrada ya tiene como máximo tres cifras decimales, el resultado conserva el mismo valor.
-- Los resultados deben admitir los acarreos necesarios, incluidos `9 999,999` redondeado a millares, cuyo resultado es `10 000`.
+- Las posiciones objetivo se convierten a pasos de esa unidad: millares `1 000 000`, centenas `100 000`, decenas `10 000`, unidades `1 000`, décimas `100` y centésimas `10`.
+- Se redondea al múltiplo más próximo y los empates suben. La milésima se conserva en la tabla como la cifra siguiente para decidir el redondeo a centésimas, pero no se ofrece como objetivo.
+- Los resultados deben admitir los acarreos necesarios, incluidos `9 999,999` redondeado a millares, cuyo resultado es `10 000`, y `9.999.999` redondeado a centenas de millar, cuyo resultado es `10.000.000`.
 - La verificación comprueba primero la representación del número original y después el valor redondeado. Las entradas se comparan por valor posicional, no por su formato visual.
 
 ### Estado de partida
@@ -127,9 +130,10 @@ No hay manifiesto de dependencias, configuración de compilación ni configuraci
 Ampliar la cobertura existente para verificar:
 
 - selección obligatoria de modo y flujo de inicio con nombre vacío o informado;
-- normalización y validación de coma decimal, límites `0` y `9 999,999`, entradas inválidas y máximo de tres cifras decimales;
-- redondeo decimal a millares, centenas, decenas, unidades, décimas, centésimas y milésimas, con casos por debajo, en y por encima de 5;
-- acarreos, incluido el resultado `10 000` al redondear `9 999,999` a millares;
+- normalización y validación de coma decimal, límites `0` y `9.999,999`, entradas inválidas y máximo de tres cifras decimales;
+- redondeo decimal a millares, centenas, decenas, unidades, décimas y centésimas, comprobando la cifra de milésimas en los casos por debajo, en y por encima de 5;
+- límites enteros y decimales, incluidos `0`, `9.999.999` y `9.999,999`, tanto en ejercicios como en misiones personalizadas;
+- acarreos, incluidos los resultados `10 000` al redondear `9 999,999` a millares y `10.000.000` al redondear `9.999.999` a centenas de millar;
 - aceptación de misiones personalizadas decimales dentro de los mismos límites;
 - inclusión segura del nombre en mensajes, mensajes neutrales si no se indicó nombre, y feedback alentador después de cada error;
 - persistencia, migración del registro existente y tratamiento de datos guardados inválidos, según la decisión sobre progreso por modo;
@@ -145,8 +149,8 @@ Al cambiar la lógica, ejecutar las pruebas de unidad correspondientes. Al cambi
 | Riesgo | Mitigación prevista |
 | --- | --- |
 | Los decimales pueden dar resultados incorrectos si se comparan como números binarios de coma flotante. | Convertir a unidades enteras de milésima y operar con enteros. |
-| Redondear a milésimas con una entrada limitada a tres cifras decimales no altera su valor. | Mostrar esa posición conforme a la especificación y dejar claro que sirve para practicar su valor posicional. |
-| Redondear el máximo decimal a millares genera un número mayor que el máximo de entrada. | Separar límites de entrada de capacidad de resultado y admitir el acarreo a `10 000`. |
+| El alumno puede confundir la columna de milésimas con una posición de redondeo disponible. | Mantener la columna para descomposición y lectura de la cifra siguiente, pero excluirla de los objetivos. |
+| Redondear los máximos de entrada puede generar un número mayor que el máximo permitido para la entrada. | Separar los límites de entrada de la capacidad del resultado y admitir los acarreos a `10 000` o `10.000.000`, según el modo. |
 | El nivel y los aciertos se comparten entre los modos, por decisión del usuario. | Conservar el registro `{ level, score }` y la clave `jurassicRoundGame_v5`; no se requiere migrar datos existentes. |
 | Nombre y modo se añaden a un flujo sin pantalla inicial. | Mantenerlos en estado de sesión y bloquear la generación de preguntas hasta elegir modo. |
 | Las rutas absolutas pueden funcionar localmente y fallar en GitHub Pages bajo el prefijo del repositorio. | Usar referencias relativas y verificar la publicación en una ruta de proyecto. |
@@ -161,6 +165,6 @@ Al cambiar la lógica, ejecutar las pruebas de unidad correspondientes. Al cambi
 - El modo y el nombre solo duran la sesión actual; el nombre no se persiste.
 - El nivel y los aciertos se comparten entre los modos; el modo seleccionado y el nombre solo duran la sesión.
 - Se conserva el formato y la clave de progreso existentes porque el modelo compartido no requiere migración.
-- El máximo de entrada decimal es `9 999,999`, con hasta tres cifras decimales; la salida puede superar el máximo de entrada por redondeo.
+- El modo entero admite entradas de `0` a `9.999.999`; el modo decimal admite entradas de `0` a `9.999,999`, con hasta tres cifras decimales. En ambos modos, la salida puede superar el máximo de entrada por redondeo.
 - La compatibilidad objetivo son las versiones estables actuales de Chrome, Edge, Firefox y Safari.
 - GitHub Pages se publica desde `main` y la carpeta raíz en `/redondea/`; no se añade paso de compilación ni flujo de despliegue basado en dependencias.

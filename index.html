@@ -58,17 +58,19 @@
             </div>
 
             <div class="input-wrapper">
-                <table role="grid" aria-label="Tabla de valor posicional, desde millones hasta milésimas">
+                <table role="grid" aria-label="Tabla de valor posicional, desde decenas de millón hasta milésimas">
                     <thead>
                         <tr>
                             <th>Número a redondear</th>
-                            <th>M<br><span class="table-detail">Millones</span></th>
-                            <th>CM<br><span class="table-detail">Cent. Millar</span></th>
-                            <th>DM<br><span class="table-detail">Dec. Millar</span></th>
+                            <th class="integer-large-column">Dmi<br><span class="table-detail">Dec. Millón</span></th>
+                            <th class="integer-large-column">M<br><span class="table-detail">Millones</span></th>
+                            <th class="integer-large-column">CM<br><span class="table-detail">Cent. Millar</span></th>
+                            <th class="integer-large-column">DM<br><span class="table-detail">Dec. Millar</span></th>
                             <th>UM<br><span class="table-detail">Uni. Millar</span></th>
                             <th>C<br><span class="table-detail">Centenas</span></th>
                             <th>D<br><span class="table-detail">Decenas</span></th>
                             <th>U<br><span class="table-detail">Unidades</span></th>
+                            <th class="decimal-column decimal-separator-column" aria-label="Coma decimal"><span aria-label="Coma decimal">,</span></th>
                             <th class="decimal-column">d<br><span class="table-detail">Décimas</span></th>
                             <th class="decimal-column">c<br><span class="table-detail">Centésimas</span></th>
                             <th class="decimal-column">m<br><span class="table-detail">Milésimas</span></th>
@@ -81,19 +83,21 @@
                                 <span class="row-label">1. Coloca el número:</span>
                                 <span id="table-original-number" class="original-number"></span>
                             </td>
-                            <td><label class="digit-input-label" for="src-m">Millones del número original</label><input type="text" id="src-m" maxlength="1" aria-label="Millones del número original"></td>
-                            <td><label class="digit-input-label" for="src-cm">Centenas de millar del número original</label><input type="text" id="src-cm" maxlength="1" aria-label="Centenas de millar del número original"></td>
-                            <td><label class="digit-input-label" for="src-dm">Decenas de millar del número original</label><input type="text" id="src-dm" maxlength="1" aria-label="Decenas de millar del número original"></td>
+                            <td class="integer-large-column"><label class="digit-input-label" for="src-dmi">Decenas de millón del número original</label><input type="text" id="src-dmi" maxlength="1" aria-label="Decenas de millón del número original"></td>
+                            <td class="integer-large-column"><label class="digit-input-label" for="src-m">Millones del número original</label><input type="text" id="src-m" maxlength="1" aria-label="Millones del número original"></td>
+                            <td class="integer-large-column"><label class="digit-input-label" for="src-cm">Centenas de millar del número original</label><input type="text" id="src-cm" maxlength="1" aria-label="Centenas de millar del número original"></td>
+                            <td class="integer-large-column"><label class="digit-input-label" for="src-dm">Decenas de millar del número original</label><input type="text" id="src-dm" maxlength="1" aria-label="Decenas de millar del número original"></td>
                             <td><label class="digit-input-label" for="src-um">Unidades de millar del número original</label><input type="text" id="src-um" maxlength="1" aria-label="Unidades de millar del número original"></td>
                             <td><label class="digit-input-label" for="src-c">Centenas del número original</label><input type="text" id="src-c" maxlength="1" aria-label="Centenas del número original"></td>
                             <td><label class="digit-input-label" for="src-d">Decenas del número original</label><input type="text" id="src-d" maxlength="1" aria-label="Decenas del número original"></td>
                             <td><label class="digit-input-label" for="src-u">Unidades del número original</label><input type="text" id="src-u" maxlength="1" aria-label="Unidades del número original"></td>
+                            <td class="decimal-column decimal-separator-column" aria-label="Coma decimal"><span>,</span></td>
                             <td class="decimal-column"><label class="digit-input-label" for="src-tenths">Décimas del número original</label><input type="text" id="src-tenths" maxlength="1" aria-label="Décimas del número original"></td>
                             <td class="decimal-column"><label class="digit-input-label" for="src-hundredths">Centésimas del número original</label><input type="text" id="src-hundredths" maxlength="1" aria-label="Centésimas del número original"></td>
                             <td class="decimal-column"><label class="digit-input-label" for="src-thousandths">Milésimas del número original</label><input type="text" id="src-thousandths" maxlength="1" aria-label="Milésimas del número original"></td>
                         </tr>
                         
-                        <tr class="spacer-row"><td colspan="11"></td></tr>
+                        <tr class="spacer-row"><td colspan="13"></td></tr>
 
                         <!-- Fila 2: Resultado -->
                         <tr class="row-round">
@@ -101,13 +105,15 @@
                                 <span class="row-label">2. Resultado:</span>
                                 <span class="rounded-label">Redondeado</span>
                             </td>
-                            <td><label class="digit-input-label" for="res-m">Millones del resultado redondeado</label><input type="text" id="res-m" maxlength="1" aria-label="Millones del resultado redondeado"></td>
-                            <td><label class="digit-input-label" for="res-cm">Centenas de millar del resultado redondeado</label><input type="text" id="res-cm" maxlength="1" aria-label="Centenas de millar del resultado redondeado"></td>
-                            <td><label class="digit-input-label" for="res-dm">Decenas de millar del resultado redondeado</label><input type="text" id="res-dm" maxlength="1" aria-label="Decenas de millar del resultado redondeado"></td>
+                            <td class="integer-large-column"><label class="digit-input-label" for="res-dmi">Decenas de millón del resultado redondeado</label><input type="text" id="res-dmi" maxlength="1" aria-label="Decenas de millón del resultado redondeado"></td>
+                            <td class="integer-large-column"><label class="digit-input-label" for="res-m">Millones del resultado redondeado</label><input type="text" id="res-m" maxlength="1" aria-label="Millones del resultado redondeado"></td>
+                            <td class="integer-large-column"><label class="digit-input-label" for="res-cm">Centenas de millar del resultado redondeado</label><input type="text" id="res-cm" maxlength="1" aria-label="Centenas de millar del resultado redondeado"></td>
+                            <td class="integer-large-column"><label class="digit-input-label" for="res-dm">Decenas de millar del resultado redondeado</label><input type="text" id="res-dm" maxlength="1" aria-label="Decenas de millar del resultado redondeado"></td>
                             <td><label class="digit-input-label" for="res-um">Unidades de millar del resultado redondeado</label><input type="text" id="res-um" maxlength="1" aria-label="Unidades de millar del resultado redondeado"></td>
                             <td><label class="digit-input-label" for="res-c">Centenas del resultado redondeado</label><input type="text" id="res-c" maxlength="1" aria-label="Centenas del resultado redondeado"></td>
                             <td><label class="digit-input-label" for="res-d">Decenas del resultado redondeado</label><input type="text" id="res-d" maxlength="1" aria-label="Decenas del resultado redondeado"></td>
                             <td><label class="digit-input-label" for="res-u">Unidades del resultado redondeado</label><input type="text" id="res-u" maxlength="1" aria-label="Unidades del resultado redondeado"></td>
+                            <td class="decimal-column decimal-separator-column" aria-label="Coma decimal"><span>,</span></td>
                             <td class="decimal-column"><label class="digit-input-label" for="res-tenths">Décimas del resultado redondeado</label><input type="text" id="res-tenths" maxlength="1" aria-label="Décimas del resultado redondeado"></td>
                             <td class="decimal-column"><label class="digit-input-label" for="res-hundredths">Centésimas del resultado redondeado</label><input type="text" id="res-hundredths" maxlength="1" aria-label="Centésimas del resultado redondeado"></td>
                             <td class="decimal-column"><label class="digit-input-label" for="res-thousandths">Milésimas del resultado redondeado</label><input type="text" id="res-thousandths" maxlength="1" aria-label="Milésimas del resultado redondeado"></td>
@@ -149,7 +155,7 @@
         <div class="custom-form-group">
             <label for="custom-input-number">1. Escribe el número:</label>
             <input type="text" id="custom-input-number" placeholder="Ej: 1450 o 12,5" inputmode="decimal" aria-describedby="custom-number-help">
-            <small id="custom-number-help">Enteros: de 10 a 999 999. Decimales: de 0 a 9 999,999.</small>
+            <small id="custom-number-help">Enteros: de 0 a 9 999 999. Decimales: de 0 a 9 999,999.</small>
         </div>
 
         <div class="custom-form-group">
